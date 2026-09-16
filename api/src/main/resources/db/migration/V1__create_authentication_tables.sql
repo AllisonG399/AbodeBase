@@ -4,7 +4,7 @@
 
 -- Users
 CREATE TABLE users (
-    id BIGINT NOT NULL AUTO_INCREMENT,
+    id BINARY(16) NOT NULL,
     email VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
@@ -26,7 +26,7 @@ CREATE TABLE roles (
 
 -- User-to-role relationship
 CREATE TABLE user_roles (
-    user_id BIGINT NOT NULL,
+    user_id BINARY(16) NOT NULL,
     role_id BIGINT NOT NULL,
 
     PRIMARY KEY (user_id, role_id),
