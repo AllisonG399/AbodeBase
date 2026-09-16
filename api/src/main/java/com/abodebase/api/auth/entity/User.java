@@ -10,6 +10,7 @@ import java.util.UUID;
 @Table(
     name = "users",
     uniqueConstraints = {
+        @UniqueConstraint(name = "uk_users_username", columnNames = "username"),
         @UniqueConstraint(name = "uk_users_email", columnNames = "email")
     }
 )
@@ -22,6 +23,9 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @Column(nullable = false, length = 30)
+    private String username;
 
     @Column(nullable = false, length = 255)
     private String email;
@@ -74,6 +78,14 @@ public class User {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getEmail() {

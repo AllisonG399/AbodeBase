@@ -5,6 +5,7 @@
 -- Users
 CREATE TABLE users (
     id BINARY(16) NOT NULL,
+    username VARCHAR(30) NOT NULL,
     email VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
@@ -12,6 +13,7 @@ CREATE TABLE users (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
+    UNIQUE KEY uk_users_username (username),
     UNIQUE KEY uk_users_email (email)
 );
 

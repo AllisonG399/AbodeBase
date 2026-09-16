@@ -26,5 +26,6 @@ management:
 
 abodebase:
   admin:
+    username: ${ABODEBASE_ADMIN_USERNAME:}
     email: ${ABODEBASE_ADMIN_EMAIL:}
     password: ${ABODEBASE_ADMIN_PASSWORD:}

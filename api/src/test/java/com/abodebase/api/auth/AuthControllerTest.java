@@ -32,16 +32,16 @@ class AuthControllerTest {
 
         LoginRequest request = new LoginRequest();
 
-        request.setEmail(System.getenv("ABODEBASE_ADMIN_EMAIL"));
+        request.setIdentifier(System.getenv("ABODEBASE_ADMIN_EMAIL"));
         request.setPassword(System.getenv("ABODEBASE_ADMIN_PASSWORD"));
 
         String requestBody = """
             {
-                "email": "%s",
+                "identifier": "%s",
                 "password": "%s"
             }
             """.formatted(
-            request.getEmail(),
+            request.getIdentifier(),
             request.getPassword()
         );
 
@@ -63,16 +63,16 @@ class AuthControllerTest {
 
         LoginRequest request = new LoginRequest();
 
-        request.setEmail(System.getenv("ABODEBASE_ADMIN_EMAIL"));
+        request.setIdentifier(System.getenv("ABODEBASE_ADMIN_EMAIL"));
         request.setPassword(System.getenv("ABODEBASE_ADMIN_PASSWORD"));
 
         String requestBody = """
             {
-                "email": "%s",
+                "identifier": "%s",
                 "password": "%s"
             }
             """.formatted(
-            request.getEmail(),
+            request.getIdentifier(),
             request.getPassword()
         );
 
@@ -122,16 +122,16 @@ class AuthControllerTest {
 
         LoginRequest request = new LoginRequest();
 
-        request.setEmail(System.getenv("ABODEBASE_ADMIN_EMAIL"));
+        request.setIdentifier(System.getenv("ABODEBASE_ADMIN_EMAIL"));
         request.setPassword("DefinitelyWrongPassword123!");
 
         String requestBody = """
             {
-                "email": "%s",
+                "identifier": "%s",
                 "password": "%s"
             }
             """.formatted(
-                request.getEmail(),
+                request.getIdentifier(),
                 request.getPassword()
             );
 
@@ -153,16 +153,16 @@ class AuthControllerTest {
 
         LoginRequest request = new LoginRequest(); 
 
-        request.setEmail("nonexistent@abodebase.com"); 
+        request.setIdentifier("nonexistent@abodebase.com"); 
         request.setPassword("ValidLookingPassword123!"); 
         
         String requestBody = """ 
             { 
-                "email": "%s", 
+                "identifier": "%s", 
                 "password": "%s" 
             } 
             """.formatted( 
-                request.getEmail(), 
+                request.getIdentifier(), 
                 request.getPassword() 
             ); 
         
@@ -176,11 +176,11 @@ class AuthControllerTest {
     }
 
     // ============================================ 
-    // Missing Email
+    // Missing Identifier
     // ============================================ 
 
     @Test
-    void loginWithMissingEmailReturnsBadRequest() throws Exception {
+    void loginWithMissingIdentifierReturnsBadRequest() throws Exception {
 
         String requestBody = """
             {
@@ -208,7 +208,7 @@ class AuthControllerTest {
 
         String requestBody = """
             {
-                "email": "%s"
+                "identifier": "%s"
             }
             """.formatted(
             System.getenv("ABODEBASE_ADMIN_EMAIL")
@@ -224,24 +224,24 @@ class AuthControllerTest {
     }
 
     // ============================================ 
-    // Empty Email
+    // Empty Identifier
     // ============================================ 
 
     @Test
-    void loginWithEmptyEmailReturnsBadRequest() throws Exception {
+    void loginWithEmptyIdentifierReturnsBadRequest() throws Exception {
 
         LoginRequest request = new LoginRequest();
 
-        request.setEmail("");
+        request.setIdentifier("");
         request.setPassword(System.getenv("ABODEBASE_ADMIN_PASSWORD"));
 
         String requestBody = """
             {
-                "email": "%s",
+                "identifier": "%s",
                 "password": "%s"
             }    
             """.formatted(
-                request.getEmail(),
+                request.getIdentifier(),
                 request.getPassword()
             );
 
@@ -263,49 +263,18 @@ class AuthControllerTest {
 
         LoginRequest request = new LoginRequest();
 
-        request.setEmail(System.getenv("ABODEBASE_ADMIN_EMAIL"));
+        request.setIdentifier(System.getenv("ABODEBASE_ADMIN_EMAIL"));
         request.setPassword("");
 
         String requestBody = """
             {
-                "email": "%s",
+                "identifier": "%s",
                 "password": "%s"
             }    
             """.formatted(
-                request.getEmail(),
+                request.getIdentifier(),
                 request.getPassword()
             );
-
-        mockMvc.perform(
-            post("/api/auth/login")
-                .with(csrf())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody)
-        )
-        .andExpect(status().isBadRequest());
-    }
-
-    // ============================================
-    // Invalid Email Format
-    // ============================================
-
-    @Test
-    void loginWithInvalidEmailFormatReturnsBadRequest() throws Exception {
-
-        LoginRequest request = new LoginRequest();
-
-        request.setEmail("not-an-email");
-        request.setPassword(System.getenv("ABODEBASE_ADMIN_PASSWORD"));
-
-        String requestBody = """
-            {
-                "email": "%s",
-                "password": "%s"
-            }
-            """.formatted(
-            request.getEmail(),
-            request.getPassword()
-        );
 
         mockMvc.perform(
             post("/api/auth/login")
@@ -325,16 +294,16 @@ class AuthControllerTest {
 
         LoginRequest request = new LoginRequest();
 
-        request.setEmail(System.getenv("ABODEBASE_ADMIN_EMAIL"));
+        request.setIdentifier(System.getenv("ABODEBASE_ADMIN_EMAIL"));
         request.setPassword(System.getenv("ABODEBASE_ADMIN_PASSWORD"));
 
         String requestBody = """
             {
-                "email": "%s",
+                "identifier": "%s",
                 "password": "%s"
             }
             """.formatted(
-            request.getEmail(),
+            request.getIdentifier(),
             request.getPassword()
         );
 
@@ -367,16 +336,16 @@ class AuthControllerTest {
 
         LoginRequest request = new LoginRequest();
 
-        request.setEmail(System.getenv("ABODEBASE_ADMIN_EMAIL"));
+        request.setIdentifier(System.getenv("ABODEBASE_ADMIN_EMAIL"));
         request.setPassword(System.getenv("ABODEBASE_ADMIN_PASSWORD"));
 
         String requestBody = """
             {
-                "email": "%s",
+                "identifier": "%s",
                 "password": "%s"
             }
             """.formatted(
-            request.getEmail(),
+            request.getIdentifier(),
             request.getPassword()
         );
 

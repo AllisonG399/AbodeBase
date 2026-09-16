@@ -1,6 +1,5 @@
 package com.abodebase.api.auth.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 public class LoginRequest {
@@ -9,9 +8,8 @@ public class LoginRequest {
     // Fields
     // ============================================
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email must be valid")
-    private String email;
+    @NotBlank(message = "Username or email is required")
+    private String identifier;
 
     @NotBlank(message = "Password is required")
     private String password;
@@ -21,12 +19,12 @@ public class LoginRequest {
     // Getters and Setters
     // ============================================
 
-    public String getEmail() {
-        return email;
+    public String getIdentifier() {
+        return identifier;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setIdentifier(String identifier) {
+        this.identifier = identifier;
     }
 
     public String getPassword() {

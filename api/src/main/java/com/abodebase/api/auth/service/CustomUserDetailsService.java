@@ -33,12 +33,19 @@ public class CustomUserDetailsService implements UserDetailsService {
     // ============================================
 
     @Override
-    public UserDetails loadUserByUsername(String email)
-    throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String identifier)
+        throws UsernameNotFoundException {
 
-        User user = userRepository.findByEmail(email)
+        String normalizedIdentifier =
+            identifier.trim().toLowerCase();
+
+        User user = userRepository
+            .findByEmailIgnoreCaseOrUsernameIgnoreCase(
+                normalizedIdentifier,
+                normalizedIdentifier
+            )
             .orElseThrow(() -> new UsernameNotFoundException(
-                "User not found with email: " + email
+                "User not found with identifier: " + identifier
             ));
 
         Set<GrantedAuthority> authorities = user.getRoles()

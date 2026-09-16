@@ -4,6 +4,7 @@ import com.abodebase.api.auth.entity.Role;
 import com.abodebase.api.auth.entity.User;
 import com.abodebase.api.auth.repository.RoleRepository;
 import com.abodebase.api.auth.repository.UserRepository;
+import com.abodebase.api.auth.validation.UsernameValidator;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,6 +16,10 @@ public class AdminInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UsernameValidator usernameValidator;
+
+    @Value("${abodebase.admin.username:}")
+    private String adminUsername;
 
     @Value("${abodebase.admin.email:}")
     private String adminEmail;
@@ -30,11 +35,13 @@ public class AdminInitializer implements CommandLineRunner {
     public AdminInitializer(
         UserRepository userRepository,
         RoleRepository roleRepository,
-        PasswordEncoder passwordEncoder
+        PasswordEncoder passwordEncoder,
+        UsernameValidator usernameValidator
     ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.usernameValidator = usernameValidator;
     }
 
 
@@ -51,10 +58,10 @@ public class AdminInitializer implements CommandLineRunner {
         }
 
         // Make sure the required environment variables exist.
-        if (adminEmail.isBlank() || adminPassword.isBlank()) {
+        if (adminEmail.isBlank() || adminPassword.isBlank() || adminUsername.isBlank()) {
             throw new IllegalStateException(
                 "Admin credentials are not configured. " +
-                "Set ABODEBASE_ADMIN_EMAIL and ABODEBASE_ADMIN_PASSWORD."
+                "Set ABODEBASE_ADMIN_USERNAME, ABODEBASE_ADMIN_EMAIL, and ABODEBASE_ADMIN_PASSWORD."
             );
         }
 
@@ -66,6 +73,7 @@ public class AdminInitializer implements CommandLineRunner {
 
         // Create the initial admin account.
         User admin = new User();
+        admin.setUsername(usernameValidator.validateAndNormalize(adminUsername));
         admin.setEmail(adminEmail.trim().toLowerCase());
         admin.setPasswordHash(passwordEncoder.encode(adminPassword));
         admin.setEnabled(true);
