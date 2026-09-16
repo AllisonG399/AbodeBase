@@ -7,6 +7,15 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.core.userdetails.UserDetailsService;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
 @Configuration
 @EnableWebSecurity
@@ -27,7 +36,7 @@ public class SecurityConfig {
 
                 // Public endpoints
                 .requestMatchers(
-                    "/api/auth/**",
+                    "/api/auth/login",
                     "/actuator/health"
                 ).permitAll()
 
@@ -43,14 +52,16 @@ public class SecurityConfig {
                 .anyRequest().permitAll()
             )
 
-            // Username/password authentication
-            .formLogin(form -> form
-                .permitAll()
-            )
-
             // Logout
             .logout(logout -> logout
                 .permitAll()
+            )
+
+            // API authentication errors
+            .exceptionHandling(exceptionHandling -> exceptionHandling
+                .authenticationEntryPoint(
+                    new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
+                )
             )
 
             // Session-based authentication
@@ -60,4 +71,31 @@ public class SecurityConfig {
 
         return http.build();
     }
+
+    // ============================================
+    // Authentication Manager
+    // ============================================
+
+    @Bean
+    public AuthenticationManager authenticationManager(
+        UserDetailsService userDetailsService,
+        PasswordEncoder passwordEncoder
+    ) {
+        DaoAuthenticationProvider authenticationProvider =
+            new DaoAuthenticationProvider(userDetailsService);
+
+        authenticationProvider.setPasswordEncoder(passwordEncoder);
+
+        return new ProviderManager(authenticationProvider);
+    }
+
+    // ============================================
+    // Security Context Repository
+    // ============================================
+
+    @Bean
+    public SecurityContextRepository securityContextRepository() {
+        return new HttpSessionSecurityContextRepository();
+    }
+    
 }
