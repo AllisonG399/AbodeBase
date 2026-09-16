@@ -9,6 +9,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
@@ -16,6 +19,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableWebSecurity
@@ -54,6 +59,11 @@ public class SecurityConfig {
 
             // Logout
             .logout(logout -> logout
+                .logoutUrl("/api/auth/logout")
+                .logoutSuccessHandler(
+                    (request, response, authentication) ->
+                        response.setStatus(HttpServletResponse.SC_OK)
+                )
                 .permitAll()
             )
 

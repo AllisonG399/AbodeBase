@@ -316,4 +316,118 @@ class AuthControllerTest {
         .andExpect(status().isBadRequest());
     }
 
+    // ============================================
+    // Authenticated User Can Log Out
+    // ============================================
+
+    @Test
+    void authenticatedUserCanLogout() throws Exception {
+
+        LoginRequest request = new LoginRequest();
+
+        request.setEmail(System.getenv("ABODEBASE_ADMIN_EMAIL"));
+        request.setPassword(System.getenv("ABODEBASE_ADMIN_PASSWORD"));
+
+        String requestBody = """
+            {
+                "email": "%s",
+                "password": "%s"
+            }
+            """.formatted(
+            request.getEmail(),
+            request.getPassword()
+        );
+
+        MockHttpSession session = new MockHttpSession();
+
+        // Login
+        mockMvc.perform(
+            post("/api/auth/login")
+                .with(csrf())
+                .session(session)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+        )
+        .andExpect(status().isOk());
+
+        // Logout
+        mockMvc.perform(
+            post("/api/auth/logout")
+                .with(csrf())
+                .session(session)
+        )
+        .andExpect(status().isOk());
+    }
+
+    // ============================================
+    // Logged Out User Cannot Access Current User Endpoint
+    // ============================================
+    @Test
+    void loggedOutUserCannotAccessCurrentUserEndpoint() throws Exception {
+
+        LoginRequest request = new LoginRequest();
+
+        request.setEmail(System.getenv("ABODEBASE_ADMIN_EMAIL"));
+        request.setPassword(System.getenv("ABODEBASE_ADMIN_PASSWORD"));
+
+        String requestBody = """
+            {
+                "email": "%s",
+                "password": "%s"
+            }
+            """.formatted(
+            request.getEmail(),
+            request.getPassword()
+        );
+
+        MockHttpSession session = new MockHttpSession();
+
+        // Login
+        mockMvc.perform(
+            post("/api/auth/login")
+                .with(csrf())
+                .session(session)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+        )
+        .andExpect(status().isOk());
+
+        // Verify authentication exists
+        mockMvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/api/auth/me")
+                .session(session)
+        )
+        .andExpect(status().isOk());
+
+        // Logout
+        mockMvc.perform(
+            post("/api/auth/logout")
+                .with(csrf())
+                .session(session)
+        )
+        .andExpect(status().isOk());
+
+        // Verify authentication is gone
+        mockMvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/api/auth/me")
+                .session(session)
+        )
+        .andExpect(status().isUnauthorized());
+    }
+
+    // ============================================
+    // Unauthorized logout
+    // ============================================
+
+    @Test
+    void unauthenticatedUserCanLogout() throws Exception {
+
+        mockMvc.perform(
+            post("/api/auth/logout")
+                .with(csrf())
+        )
+        .andExpect(status().isOk());
+    }
 }
