@@ -20,7 +20,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
-import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableWebSecurity
@@ -42,6 +41,7 @@ public class SecurityConfig {
                 // Public endpoints
                 .requestMatchers(
                     "/api/auth/login",
+                    "/api/auth/register",
                     "/actuator/health"
                 ).permitAll()
 

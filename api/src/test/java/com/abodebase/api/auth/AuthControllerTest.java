@@ -1,19 +1,22 @@
 package com.abodebase.api.auth;
 
 import com.abodebase.api.auth.dto.LoginRequest;
+import com.abodebase.api.auth.dto.RegisterRequest;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockHttpSession;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import org.springframework.mock.web.MockHttpSession;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -398,5 +401,402 @@ class AuthControllerTest {
                 .with(csrf())
         )
         .andExpect(status().isOk());
+    }
+
+    // ============================================
+    // Successful Registration
+    // ============================================
+
+    @Test
+    void registrationWithValidCredentialsReturnsCreated() throws Exception {
+
+        String username =
+            "testuser" + System.currentTimeMillis();
+
+        String email =
+            "test" + System.currentTimeMillis() + "@example.com";
+
+        RegisterRequest request = new RegisterRequest();
+
+        request.setUsername(username);
+        request.setEmail(email);
+        request.setPassword("Password123!");
+
+        String requestBody = """
+            {
+                "username": "%s",
+                "email": "%s",
+                "password": "%s"
+            }
+            """.formatted(
+            request.getUsername(),
+            request.getEmail(),
+            request.getPassword()
+        );
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+        )
+        .andExpect(status().isCreated());
+    }
+
+    // ============================================
+    // Missing Registration Username
+    // ============================================
+
+    @Test
+    void registrationWithMissingUsernameReturnsBadRequest() throws Exception {
+
+        String requestBody = """
+            {
+                "email": "newuser@example.com",
+                "password": "Password123!"
+            }
+            """;
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    // ============================================
+    // Missing Registration Email
+    // ============================================
+
+    @Test
+    void registrationWithMissingEmailReturnsBadRequest() throws Exception {
+
+        String requestBody = """
+            {
+                "username": "newuser123",
+                "password": "Password123!"
+            }
+            """;
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    // ============================================
+    // Invalid Registration Email
+    // ============================================
+
+    @Test
+    void registrationWithInvalidEmailReturnsBadRequest() throws Exception {
+
+        String requestBody = """
+            {
+                "username": "newuser123",
+                "email": "not-an-email",
+                "password": "Password123!"
+            }
+            """;
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    // ============================================
+    // Missing Registration Password
+    // ============================================
+
+    @Test
+    void registrationWithMissingPasswordReturnsBadRequest() throws Exception {
+
+        String requestBody = """
+            {
+                "username": "newuser123",
+                "email": "newuser@example.com"
+            }
+            """;
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    // ============================================
+    // Short Registration Password
+    // ============================================
+
+    @Test
+    void registrationWithShortPasswordReturnsBadRequest() throws Exception {
+
+        String requestBody = """
+            {
+                "username": "newuser123",
+                "email": "newuser@example.com",
+                "password": "short"
+            }
+            """;
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    // ============================================
+    // Invalid Registration Username
+    // ============================================
+
+    @Test
+    void registrationWithInvalidUsernameReturnsBadRequest() throws Exception {
+
+        String requestBody = """
+            {
+                "username": "bad_name",
+                "email": "newuser@example.com",
+                "password": "Password123!"
+            }
+            """;
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    // ============================================
+    // Reserved Registration Username
+    // ============================================
+
+    @Test
+    void registrationWithReservedUsernameReturnsBadRequest() throws Exception {
+
+        String requestBody = """
+            {
+                "username": "admin",
+                "email": "newuser@example.com",
+                "password": "Password123!"
+            }
+            """;
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    // ============================================
+    // Blocked Registration Username
+    // ============================================
+
+    @Test
+    void registrationWithBlockedUsernameReturnsBadRequest() throws Exception {
+
+        String requestBody = """
+            {
+                "username": "blockeduser",
+                "email": "newuser@example.com",
+                "password": "Password123!"
+            }
+            """;
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    // ============================================
+    // Duplicate Username
+    // ============================================
+
+    @Test
+    void registrationWithDuplicateUsernameIsRejected() throws Exception {
+
+        String username =
+            "duplicate" + System.currentTimeMillis();
+
+        String firstEmail =
+            "first" + System.currentTimeMillis() + "@example.com";
+
+        String secondEmail =
+            "second" + System.currentTimeMillis() + "@example.com";
+
+        String firstRequest = """
+            {
+                "username": "%s",
+                "email": "%s",
+                "password": "Password123!"
+            }
+            """.formatted(username, firstEmail);
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(firstRequest)
+        )
+        .andExpect(status().isCreated());
+
+        String secondRequest = """
+            {
+                "username": "%s",
+                "email": "%s",
+                "password": "Password123!"
+            }
+            """.formatted(username, secondEmail);
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(secondRequest)
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    // ============================================
+    // Duplicate Email
+    // ============================================
+
+    @Test
+    void registrationWithDuplicateEmailIsRejected() throws Exception {
+
+        String firstUsername =
+            "firstuser" + System.currentTimeMillis();
+
+        String secondUsername =
+            "seconduser" + System.currentTimeMillis();
+
+        String email =
+            "duplicate" + System.currentTimeMillis() + "@example.com";
+
+        String firstRequest = """
+            {
+                "username": "%s",
+                "email": "%s",
+                "password": "Password123!"
+            }
+            """.formatted(firstUsername, email);
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(firstRequest)
+        )
+        .andExpect(status().isCreated());
+
+        String secondRequest = """
+            {
+                "username": "%s",
+                "email": "%s",
+                "password": "Password123!"
+            }
+            """.formatted(secondUsername, email);
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(secondRequest)
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    // ============================================
+    // Registration → Login → Current User
+    // ============================================
+
+    @Test
+    void registeredUserCanLoginAndAccessCurrentUser() throws Exception {
+
+        String timestamp = String.valueOf(System.currentTimeMillis());
+
+        String username = "flowuser" + timestamp;
+        String email = "flow" + timestamp + "@example.com";
+        String password = "Password123!";
+
+        // Register
+        String registerBody = """
+            {
+                "username": "%s",
+                "email": "%s",
+                "password": "%s"
+            }
+            """.formatted(
+            username,
+            email,
+            password
+        );
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(registerBody)
+        )
+        .andExpect(status().isCreated());
+
+        // Log in
+        String loginBody = """
+            {
+                "identifier": "%s",
+                "password": "%s"
+            }
+            """.formatted(
+            email,
+            password
+        );
+
+        MockHttpSession session = new MockHttpSession();
+
+        mockMvc.perform(
+            post("/api/auth/login")
+                .with(csrf())
+                .session(session)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(loginBody)
+        )
+        .andExpect(status().isOk());
+
+        // Access current user
+        mockMvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/api/auth/me")
+                .session(session)
+        )
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.email").value(email))
+        .andExpect(
+            jsonPath("$.roles",
+                org.hamcrest.Matchers.hasItem("USER"))
+        );
     }
 }
