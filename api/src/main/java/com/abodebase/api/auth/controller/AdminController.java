@@ -1,33 +1,34 @@
 package com.abodebase.api.auth.controller;
 
 import com.abodebase.api.auth.dto.AdminUserResponse;
+import com.abodebase.api.auth.dto.UpdateUserStatusRequest;
 import com.abodebase.api.auth.entity.User;
-import com.abodebase.api.auth.repository.UserRepository;
+import com.abodebase.api.auth.service.UserService;
+
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin")
 public class AdminController {
 
-    private final UserRepository userRepository;
+    private final UserService userService;
 
-    public AdminController(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public AdminController(UserService userService) {
+        this.userService = userService;
     }
-
-    // ============================================
-    // Get All Users
-    // ============================================
 
     @GetMapping("/users")
     public ResponseEntity<List<AdminUserResponse>> getAllUsers() {
 
         List<AdminUserResponse> users =
-            userRepository.findAll()
+            userService.getAllUsers()
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -35,9 +36,33 @@ public class AdminController {
         return ResponseEntity.ok(users);
     }
 
-    // ============================================
-    // Convert User Entity to Response
-    // ============================================
+    @GetMapping("/users/{id}")
+    public ResponseEntity<AdminUserResponse> getUserById(
+        @PathVariable UUID id
+    ) {
+
+        User user = userService.getUserById(id);
+
+        return ResponseEntity.ok(
+            toResponse(user)
+        );
+    }
+
+    @PatchMapping("/users/{id}/status")
+    public ResponseEntity<AdminUserResponse> updateUserStatus(
+        @PathVariable UUID id,
+        @Valid @RequestBody UpdateUserStatusRequest request
+    ) {
+
+        User user = userService.updateUserStatus(
+            id,
+            request.getEnabled()
+        );
+
+        return ResponseEntity.ok(
+            toResponse(user)
+        );
+    }
 
     private AdminUserResponse toResponse(User user) {
 

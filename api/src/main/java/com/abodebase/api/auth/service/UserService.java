@@ -5,6 +5,9 @@ import com.abodebase.api.auth.repository.UserRepository;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.UUID;
+
 @Service
 public class UserService {
 
@@ -14,9 +17,13 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    // ============================================
-    // Delete Current User
-    // ============================================
+    public User getUserById(UUID id) {
+
+        return userRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException(
+                "User not found."
+            ));
+    }
 
     public void deleteUser(String email) {
 
@@ -27,5 +34,19 @@ public class UserService {
             ));
 
         userRepository.delete(user);
+    }
+
+    public User updateUserStatus(UUID id, boolean enabled) {
+
+        User user = getUserById(id);
+
+        user.setEnabled(enabled);
+
+        return userRepository.save(user);
+    }
+
+    public List<User> getAllUsers() {
+
+        return userRepository.findAll();
     }
 }
