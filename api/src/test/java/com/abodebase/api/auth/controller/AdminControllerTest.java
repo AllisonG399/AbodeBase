@@ -23,6 +23,20 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
+/**
+ * Tests Include:
+ * Unauthenticated User
+ * Regular USER Cannot Access Admin Enpoint
+ * ADMIN Can Access Admin Endpoint
+ * ADMIN Can Get User By ID
+ * ADMIN Cannot Get Nonexistent User
+ * Regular USER Cannot Get User By ID
+ * Admin Can Disable a User
+ * Admin Can Re-Enable a User
+ * Regular User Cannot Change Status
+ * Missing Enabled Value
+ * Nonexistent User
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 class AdminControllerTest {

@@ -13,7 +13,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
-
+/**
+ * Tests Include:
+ * Authenticated User Can Delete Account
+ * Deleted User Cannot Access Current User
+ * Deleted User Cannot Login
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 class UserControllerTest {

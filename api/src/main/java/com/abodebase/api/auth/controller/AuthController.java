@@ -4,6 +4,8 @@ import com.abodebase.api.auth.dto.CurrentUserResponse;
 import com.abodebase.api.auth.dto.LoginRequest;
 import com.abodebase.api.auth.dto.RegisterRequest;
 import com.abodebase.api.auth.service.RegistrationService;
+import com.abodebase.api.auth.service.LoginAttemptService;
+import com.abodebase.api.auth.exception.LoginRateLimitException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -13,11 +15,14 @@ import java.util.stream.Collectors;
 import java.util.Set;
 
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.SecurityContextRepository;
+
 import org.springframework.web.bind.annotation.*;
 
 
@@ -30,7 +35,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final SecurityContextRepository securityContextRepository;
     private final RegistrationService registrationService;
-
+    private final LoginAttemptService loginAttemptService;
 
     // ============================================
     // Constructor
@@ -39,11 +44,13 @@ public class AuthController {
     public AuthController(
             AuthenticationManager authenticationManager,
             SecurityContextRepository securityContextRepository,
-            RegistrationService registrationService
+            RegistrationService registrationService,
+            LoginAttemptService loginAttemptService
     ) {
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
         this.registrationService = registrationService;
+        this.loginAttemptService = loginAttemptService;
     }
 
 
@@ -71,30 +78,53 @@ public class AuthController {
         HttpServletResponse httpResponse
     ) {
 
-        Authentication authentication =
-            authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                    request.getIdentifier().trim().toLowerCase(),
-                    request.getPassword()
-                )
+        String identifier = request.getIdentifier().trim().toLowerCase();
+        String loginKey = identifier + ":" + httpRequest.getRemoteAddr();
+
+        // Check whether this identifier/IP combination has reached the login attempt limit.
+        if (loginAttemptService.isBlocked(loginKey)) {
+            throw new LoginRateLimitException(
+                "Too many login attempts. Please try again later."
+            );
+        }
+
+        try {
+
+            Authentication authentication =
+                authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                        identifier,
+                        request.getPassword()
+                    )
+                );
+
+            // Successful login clears previous failed attempts.
+            loginAttemptService.resetAttempts(loginKey);
+
+            var securityContext =
+                org.springframework.security.core.context.SecurityContextHolder
+                    .createEmptyContext();
+
+            securityContext.setAuthentication(authentication);
+
+            org.springframework.security.core.context.SecurityContextHolder
+                .setContext(securityContext);
+
+            securityContextRepository.saveContext(
+                securityContext,
+                httpRequest,
+                httpResponse
             );
 
-        var securityContext =
-            org.springframework.security.core.context.SecurityContextHolder
-                .createEmptyContext();
+            return ResponseEntity.ok().build();
 
-        securityContext.setAuthentication(authentication);
+        } catch (AuthenticationException exception) {
 
-        org.springframework.security.core.context.SecurityContextHolder
-            .setContext(securityContext);
+            // Authentication failed, so record the attempt
+            loginAttemptService.recordFailedAttempt(loginKey);
 
-        securityContextRepository.saveContext(
-            securityContext,
-            httpRequest,
-            httpResponse
-        );
-
-        return ResponseEntity.ok().build();
+            throw exception;
+        }
     }
 
     // ============================================

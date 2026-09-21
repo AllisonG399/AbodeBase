@@ -5,6 +5,22 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Tests Include:
+ * Valid Username is Accepted
+ * Username is Normalized to Lowercase
+ * Surrounding Whitespace is Removed
+ * Null Username is Rejected
+ * Blank Username is Rejected
+ * Username Shorter than Three Characters is Rejected
+ * Username Longer than Thirty Characters is Rejected
+ * Username with Special Characters is Rejected
+ * Reserved Username is Rejected
+ * Reserved Username is Case Insensitive
+ * Blocked Username is Rejected
+ * Blocked Username is Case Insensitive
+ * Blocked Username with Whitespace is Rejected
+ */
 class UsernameValidatorTest {
 
     private UsernameValidator usernameValidator;

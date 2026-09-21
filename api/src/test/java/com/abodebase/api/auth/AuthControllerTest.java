@@ -46,6 +46,10 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
  * Duplicate Username
  * Duplicate Email
  * Registration --> Login --> Current User
+ * Four Failed Login Attempts are Allowed
+ * Fifth Failed Login Attempt is still an Authentication Failure
+ * Sixth Attempt is blocked
+ * Successful Login Resets Failed Attempts
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -930,5 +934,188 @@ class AuthControllerTest {
             jsonPath("$.roles",
                 org.hamcrest.Matchers.hasItem("USER"))
         );
+    }
+
+    // ============================================
+    // Four Failed Attempts are still Allowed
+    // ============================================
+    @Test
+    void fourFailedLoginAttemptsAreAllowed() throws Exception {
+
+        String identifier = "ratefour" + System.currentTimeMillis();
+
+        for (int i = 0; i < 4; i++) {
+
+            mockMvc.perform(
+                post("/api/auth/login")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                            "identifier": "%s",
+                            "password": "WrongPassword1"
+                        }
+                        """.formatted(identifier))
+            )
+            .andExpect(status().isUnauthorized());
+        }
+    }
+
+    // ============================================
+    // Fifth Failed Attempt is Still an Authentication Failure
+    // ============================================
+    @Test
+    void fifthFailedLoginAttemptIsUnauthorized() throws Exception {
+
+        String identifier = "ratefifth" + System.currentTimeMillis();
+
+        for (int i = 0; i < 5; i++) {
+
+            mockMvc.perform(
+                post("/api/auth/login")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                            "identifier": "%s",
+                            "password": "WrongPassword1"
+                        }
+                        """.formatted(identifier))
+            )
+            .andExpect(status().isUnauthorized());
+        }
+    }
+
+    // ============================================
+    // Sixth Attempt is Blocked
+    // ============================================
+    @Test
+    void sixthFailedLoginAttemptIsRateLimited() throws Exception {
+
+        String identifier = "ratesixth" + System.currentTimeMillis();
+
+        for (int i = 0; i < 5; i++) {
+
+            mockMvc.perform(
+                post("/api/auth/login")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                            "identifier": "%s",
+                            "password": "WrongPassword1"
+                        }
+                        """.formatted(identifier))
+            )
+            .andExpect(status().isUnauthorized());
+        }
+
+        mockMvc.perform(
+            post("/api/auth/login")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "identifier": "%s",
+                        "password": "WrongPassword1"
+                    }
+                    """.formatted(identifier))
+        )
+        .andExpect(status().isTooManyRequests());
+    }
+
+    // ============================================
+    // Successful Login Resets Failed Attempts
+    // ============================================
+    @Test
+    void successfulLoginResetsFailedAttempts() throws Exception {
+
+        String username = "ratere" + System.currentTimeMillis();
+        String email = username + "@example.com";
+        String password = "CorrectPassword1";
+
+        // Register User
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "username": "%s",
+                            "email": "%s",
+                            "password": "%s"
+                        }
+                        """.formatted(
+                            username,
+                            email,
+                            password
+                        ))
+        )
+        .andExpect(status().isCreated());
+
+        // Four Failed Login Attempts
+        for (int i = 0; i < 4; i++) {
+
+            mockMvc.perform(
+                post("/api/auth/login")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                            "identifier": "%s",
+                            "password": "WrongPassword1"
+                        }
+                        """.formatted(username))
+            )
+            .andExpect(status().isUnauthorized());
+        }
+
+        // Successful Login
+        mockMvc.perform(
+            post("/api/auth/login")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "identifier": "%s",
+                        "password": "%s"
+                    }
+                    """.formatted(
+                        username,
+                        password
+                    ))
+        )
+        .andExpect(status().isOk());
+
+        // Five More Failed Attempts
+        for (int i = 0; i < 5; i++) {
+
+            mockMvc.perform(
+                post("/api/auth/login")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                            "identifier": "%s",
+                            "password": "WrongPassword1"
+                        }
+                        """.formatted(username))
+            )
+            .andExpect(status().isUnauthorized());
+        }
+
+        // Sixth Failed Attempt is Rate Limited
+        mockMvc.perform(
+            post("/api/auth/login")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "identifier": "%s",
+                            "password": "WrongPassword1"
+                        }
+                        """.formatted(username))
+        )
+        .andExpect(status().isTooManyRequests());
     }
 }
