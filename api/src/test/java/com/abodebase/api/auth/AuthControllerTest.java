@@ -2,6 +2,7 @@ package com.abodebase.api.auth;
 
 import com.abodebase.api.auth.dto.LoginRequest;
 import com.abodebase.api.auth.dto.RegisterRequest;
+import com.abodebase.api.auth.repository.UserRepository;
 
 import org.junit.jupiter.api.Test;
 
@@ -22,6 +23,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
  * Successful Login
  * Authenticated Session
  * Unauthenticated User
+ * Disabled User Cannot Authenticate
  * Invalid Password
  * Invalid Account
  * Missing Identifier
@@ -58,6 +60,8 @@ class AuthControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private UserRepository userRepository;
 
     // ============================================
     // Successful Login
@@ -145,6 +149,64 @@ class AuthControllerTest {
         mockMvc.perform(
             org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                 .get("/api/auth/me")
+        )
+        .andExpect(status().isUnauthorized());
+    }
+
+    // ============================================
+    // Disabled User Cannot Authenticate
+    // ============================================
+
+    @Test
+    void disabledUserCannotAuthenticate() throws Exception {
+
+        String timestamp = String.valueOf(System.currentTimeMillis());
+        String username = "disabled" + timestamp;
+        String email = "disabled" + timestamp + "@example.com";
+        String password = "Password123!";
+
+        // Register User
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "username": "%s",
+                            "email": "%s",
+                            "password": "%s"
+                        }
+                        """.formatted(
+                            username,
+                            email,
+                            password
+                        ))
+        )
+        .andExpect(status().isCreated());
+
+        // Disable User
+        var user = userRepository
+            .findByUsernameIgnoreCase(username)
+            .orElseThrow();
+
+        user.setEnabled(false);
+
+        userRepository.save(user);
+
+        // Attempt Login
+        mockMvc.perform(
+            post("/api/auth/login")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {
+                            "identifier": "%s",
+                            "password": "%s"
+                        }
+                        """.formatted(
+                            username,
+                            password
+                        ))
         )
         .andExpect(status().isUnauthorized());
     }
