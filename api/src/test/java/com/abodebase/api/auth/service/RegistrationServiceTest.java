@@ -20,6 +20,15 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Tests Include:
+ * Valid Registration Creates User
+ * Duplicate Username is Rejected
+ * Duplicate Email is Rejected
+ * Password is Hashed Before Saving
+ * New User Receives User Role
+ * Missing User Role is Rejected
+ */
 @ExtendWith(MockitoExtension.class)
 class RegistrationServiceTest {
 
@@ -47,6 +56,9 @@ class RegistrationServiceTest {
         );
     }
 
+    // ============================================
+    // Valid Registration Creates User
+    // ============================================
     @Test
     void validRegistrationCreatesUser() {
 
@@ -84,6 +96,9 @@ class RegistrationServiceTest {
         assertTrue(result.getRoles().contains(userRole));
     }
 
+    // ============================================
+    // Duplicate Username is Rejected
+    // ============================================
     @Test
     void duplicateUsernameIsRejected() {
 
@@ -111,6 +126,9 @@ class RegistrationServiceTest {
         verify(userRepository, never()).save(any(User.class));
     }
 
+    // ============================================
+    // Duplicate Email is Rejected
+    // ============================================
     @Test
     void duplicateEmailIsRejected() {
 
@@ -141,6 +159,9 @@ class RegistrationServiceTest {
         verify(userRepository, never()).save(any(User.class));
     }
 
+    // ============================================
+    // Password is Hashed Before Saving
+    // ============================================
     @Test
     void passwordIsHashedBeforeSaving() {
 
@@ -185,6 +206,9 @@ class RegistrationServiceTest {
         );
     }
 
+    // ============================================
+    // New User Receives User Role
+    // ============================================
     @Test
     void newUserReceivesUserRole() {
 
@@ -222,6 +246,9 @@ class RegistrationServiceTest {
         );
     }
 
+    // ============================================
+    // Missing User Role is Rejected
+    // ============================================
     @Test
     void missingUserRoleIsRejected() {
 

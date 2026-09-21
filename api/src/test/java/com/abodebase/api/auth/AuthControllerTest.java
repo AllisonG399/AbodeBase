@@ -17,7 +17,36 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 
-
+/**
+ * Tests Include:
+ * Successful Login
+ * Authenticated Session
+ * Unauthenticated User
+ * Invalid Password
+ * Invalid Account
+ * Missing Identifier
+ * Missing Password
+ * Empty Identifier
+ * Empty Password
+ * Authenticated User Can Logout
+ * Logged Out User Cannot Access Current User Endpoint
+ * Unauthorized Logout
+ * Successful Registration
+ * Missing Registration Username
+ * Missing Registration Email
+ * Invalid Registration Email
+ * Missing Registration Password
+ * Short Registration Password
+ * Long Registration Password
+ * Registration Password Without Letter
+ * Registration Password Without Number
+ * Invalid Registration Username
+ * Reserved Registration Username
+ * Blocked Registration Username
+ * Duplicate Username
+ * Duplicate Email
+ * Registration --> Login --> Current User
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 class AuthControllerTest {
@@ -556,6 +585,109 @@ class AuthControllerTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody)
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    // ============================================
+    // Long Registration Password
+    // ============================================
+    @Test
+    void longRegistrationPassword() throws Exception {
+
+        String timestamp =
+            String.valueOf(System.currentTimeMillis());
+
+        String username =
+            "longpassword" + timestamp;
+
+        String email =
+            "longpassword" + timestamp + "@example.com";
+
+        String password =
+            "A1" + "a".repeat(71);
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "username": "%s",
+                        "email": "%s",
+                        "password": "%s"
+                    }
+                    """.formatted(
+                    username,
+                    email,
+                    password
+                ))
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    // ============================================
+    // Registration Password Without Letter
+    // ============================================
+    @Test
+    void registrationPasswordWithoutLetter() throws Exception {
+
+        String timestamp =
+            String.valueOf(System.currentTimeMillis());
+
+        String username =
+            "nonletter" + timestamp;
+
+        String email =
+            "nonletter" + timestamp + "@example.com";
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "username": "%s",
+                        "email": "%s",
+                        "password": "12345678"
+                    }
+                    """.formatted(
+                    username,
+                    email
+                ))
+        )
+        .andExpect(status().isBadRequest());
+    }
+
+    // ============================================
+    // Registration Password Without Number
+    // ============================================
+    @Test
+    void registrationPasswordWithoutNumber() throws Exception {
+
+        String timestamp =
+            String.valueOf(System.currentTimeMillis());
+
+        String username =
+            "nonnumber" + timestamp;
+
+        String email =
+            "nonnumber" + timestamp + "@example.com";
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "username": "%s",
+                        "email": "%s",
+                        "password": "abcdefgh"
+                    }
+                    """.formatted(
+                    username,
+                    email
+                ))
         )
         .andExpect(status().isBadRequest());
     }
