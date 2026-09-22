@@ -1,12 +1,16 @@
 package com.abodebase.api.auth.controller;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.abodebase.api.auth.service.RegistrationRateLimitService;
+
 import org.springframework.mock.web.MockHttpSession;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -25,6 +29,14 @@ class UserControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private RegistrationRateLimitService registrationRateLimitService;
+
+    @BeforeEach
+    void resetRegistrationRateLimiter() {
+        registrationRateLimitService.resetAllAttempts();
+    }
     
     // ============================================
     // Authenticated User Can Delete Account

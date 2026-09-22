@@ -5,7 +5,9 @@ import com.abodebase.api.auth.dto.LoginRequest;
 import com.abodebase.api.auth.dto.RegisterRequest;
 import com.abodebase.api.auth.service.RegistrationService;
 import com.abodebase.api.auth.service.LoginAttemptService;
+import com.abodebase.api.auth.service.RegistrationRateLimitService;
 import com.abodebase.api.auth.exception.LoginRateLimitException;
+import com.abodebase.api.auth.exception.RegistrationRateLimitException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -36,6 +38,7 @@ public class AuthController {
     private final SecurityContextRepository securityContextRepository;
     private final RegistrationService registrationService;
     private final LoginAttemptService loginAttemptService;
+    private final RegistrationRateLimitService registrationRateLimitService;
 
     // ============================================
     // Constructor
@@ -45,12 +48,14 @@ public class AuthController {
             AuthenticationManager authenticationManager,
             SecurityContextRepository securityContextRepository,
             RegistrationService registrationService,
-            LoginAttemptService loginAttemptService
+            LoginAttemptService loginAttemptService,
+            RegistrationRateLimitService registrationRateLimitService
     ) {
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
         this.registrationService = registrationService;
         this.loginAttemptService = loginAttemptService;
+        this.registrationRateLimitService = registrationRateLimitService;
     }
 
 
@@ -59,8 +64,23 @@ public class AuthController {
     // ============================================
     @PostMapping("/register")
     public ResponseEntity<Void> register(
-        @Valid @RequestBody RegisterRequest request
+        @Valid @RequestBody RegisterRequest request,
+        HttpServletRequest httpRequest
     ) {
+
+        String ipAddress =
+            httpRequest.getRemoteAddr();
+
+        if (registrationRateLimitService.isBlocked(ipAddress)) {
+            throw new RegistrationRateLimitException(
+                "Too many registration attempts. Please try again later."
+            );
+        }
+
+        registrationRateLimitService.recordRegistrationAttempt(
+            ipAddress
+        );
+
         registrationService.register(request);
 
         return ResponseEntity.status(201).build();

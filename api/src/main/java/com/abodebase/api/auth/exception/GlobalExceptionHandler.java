@@ -1,7 +1,5 @@
 package com.abodebase.api.auth.exception;
 
-import com.abodebase.api.auth.exception.LoginRateLimitException;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -30,6 +28,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(LoginRateLimitException.class)
     public ResponseEntity<String> handleLoginRateLimit(
         LoginRateLimitException exception
+    ) {
+        return ResponseEntity
+            .status(HttpStatus.TOO_MANY_REQUESTS)
+            .body(exception.getMessage());
+    }
+
+    // ============================================
+    // Registration Rate Limit
+    // ============================================
+
+    @ExceptionHandler(RegistrationRateLimitException.class)
+    public ResponseEntity<String> handleRegistrationRateLimit(
+        RegistrationRateLimitException exception
     ) {
         return ResponseEntity
             .status(HttpStatus.TOO_MANY_REQUESTS)

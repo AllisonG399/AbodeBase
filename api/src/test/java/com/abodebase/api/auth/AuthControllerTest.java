@@ -3,8 +3,10 @@ package com.abodebase.api.auth;
 import com.abodebase.api.auth.dto.LoginRequest;
 import com.abodebase.api.auth.dto.RegisterRequest;
 import com.abodebase.api.auth.repository.UserRepository;
+import com.abodebase.api.auth.service.RegistrationRateLimitService;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,6 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+
 
 /**
  * Tests Include:
@@ -52,6 +55,9 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
  * Fifth Failed Login Attempt is still an Authentication Failure
  * Sixth Attempt is blocked
  * Successful Login Resets Failed Attempts
+ * 
+ * Following Tests should be ran seperatly:
+ * Registration Rate Limiting --> fifth allowed - sixth is blocked
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -62,6 +68,14 @@ class AuthControllerTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RegistrationRateLimitService registrationRateLimitService;
+
+    @BeforeEach
+    void resetRegistrationRateLimiter() {
+        registrationRateLimitService.resetAllAttempts();
+    }
 
     // ============================================
     // Successful Login
@@ -1177,6 +1191,76 @@ class AuthControllerTest {
                             "password": "WrongPassword1"
                         }
                         """.formatted(username))
+        )
+        .andExpect(status().isTooManyRequests());
+    }
+
+    // ============================================
+    // Registration Rate Limiting
+    // ============================================
+
+    @Test
+    void sixthRegistrationAttemptFromSameIpIsBlocked()
+        throws Exception {
+
+        String timestamp =
+            String.valueOf(System.currentTimeMillis());
+
+        String ipAddress =
+            "192.168.1.100";
+
+        // --------------------------------------------
+        // First Five Attempts
+        // --------------------------------------------
+
+        for (int i = 1; i <= 5; i++) {
+
+            mockMvc.perform(
+                post("/api/auth/register")
+                    .with(csrf())
+                    .with(request -> {
+                        request.setRemoteAddr(ipAddress);
+                        return request;
+                    })
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                        {
+                            "username": "blocked%s%d",
+                            "email": "blocked%s%d@example.com",
+                            "password": "Password123!"
+                        }
+                        """.formatted(
+                            timestamp,
+                            i,
+                            timestamp,
+                            i
+                        ))
+            )
+            .andExpect(status().isCreated());
+        }
+
+        // --------------------------------------------
+        // Sixth Attempt
+        // --------------------------------------------
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .with(request -> {
+                    request.setRemoteAddr(ipAddress);
+                    return request;
+                })
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "username": "blocked%s6",
+                        "email": "blocked%s6@example.com",
+                        "password": "Password123!"
+                    }
+                    """.formatted(
+                        timestamp,
+                        timestamp
+                    ))
         )
         .andExpect(status().isTooManyRequests());
     }
