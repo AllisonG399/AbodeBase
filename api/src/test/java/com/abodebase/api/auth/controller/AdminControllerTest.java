@@ -33,6 +33,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
  * Missing Enabled Value
  * Nonexistent User
  * Disabled User Cannot Use Existing Session
+ * Admin Cannot Disable Own Account
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -855,8 +856,8 @@ class AdminControllerTest {
 
         for (JsonNode user : users) {
 
-            if (email.equals(user.get("email").asText())) {
-                userId = user.get("id").asText();
+            if (email.equals(user.get("email").asString())) {
+                userId = user.get("id").asString();
                 break;
             }
         }
@@ -884,5 +885,82 @@ class AdminControllerTest {
                 .session(userSession)
         )
         .andExpect(status().isUnauthorized());
+    }
+
+    // ============================================
+    // Admin Cannot Disable Own Account
+    // ============================================
+
+    @Test
+    void adminCannotDisableOwnAccount() throws Exception {
+
+        String adminEmail =
+            System.getenv("ABODEBASE_ADMIN_EMAIL");
+
+        String adminPassword =
+            System.getenv("ABODEBASE_ADMIN_PASSWORD");
+
+        String adminLoginBody = """
+            {
+                "identifier": "%s",
+                "password": "%s"
+            }
+            """.formatted(
+            adminEmail,
+            adminPassword
+        );
+
+        MockHttpSession adminSession =
+            (MockHttpSession) mockMvc.perform(
+                post("/api/auth/login")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(adminLoginBody)
+            )
+            .andExpect(status().isOk())
+            .andReturn()
+            .getRequest()
+            .getSession();
+
+        String response =
+            mockMvc.perform(
+                get("/api/admin/users")
+                    .session(adminSession)
+            )
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+        ObjectMapper objectMapper =
+            new ObjectMapper();
+
+        JsonNode users =
+            objectMapper.readTree(response);
+
+        String adminId = null;
+
+        for (JsonNode user : users) {
+
+            if (adminEmail.equals(
+                user.get("email").asString()
+            )) {
+                adminId = user.get("id").asString();
+                break;
+            }
+        }
+
+        mockMvc.perform(
+            patch("/api/admin/users/" + adminId + "/status")
+                .session(adminSession)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "enabled": false
+                    }
+                    """)
+        )
+        .andExpect(status().isBadRequest());
     }
 }

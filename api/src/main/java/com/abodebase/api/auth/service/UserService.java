@@ -99,9 +99,26 @@ public class UserService {
 
         User user = getUserById(id);
 
+        // Prevent the sole admin from disabling their own account.
+        if (!enabled && hasAdminRole(user)) {
+            throw new IllegalArgumentException(
+                "The admin account cannot be disabled."
+            );
+        }
+
         user.setEnabled(enabled);
 
         return userRepository.save(user);
+    }
+
+    // Check Admin Role
+    private boolean hasAdminRole(User user) {
+
+        return user.getRoles()
+            .stream()
+            .anyMatch(role ->
+                "ADMIN".equals(role.getName())
+            );
     }
 
     // Get List of all Users
