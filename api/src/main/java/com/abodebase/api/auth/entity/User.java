@@ -42,6 +42,9 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "deletion_requested_at")
+    private LocalDateTime deletionRequestedAt;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "user_roles",
@@ -72,6 +75,7 @@ public class User {
     // Getters and Setters
     // ============================================
 
+    // Id
     public UUID getId() {
         return id;
     }
@@ -80,6 +84,7 @@ public class User {
         this.id = id;
     }
 
+    // Username
     public String getUsername() {
         return username;
     }
@@ -88,6 +93,7 @@ public class User {
         this.username = username;
     }
 
+    // Email
     public String getEmail() {
         return email;
     }
@@ -96,6 +102,7 @@ public class User {
         this.email = email;
     }
 
+    // Password
     public String getPasswordHash() {
         return passwordHash;
     }
@@ -104,6 +111,7 @@ public class User {
         this.passwordHash = passwordHash;
     }
 
+    // Enabled
     public boolean isEnabled() {
         return enabled;
     }
@@ -112,6 +120,7 @@ public class User {
         this.enabled = enabled;
     }
 
+    // Created / Updated
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -120,6 +129,18 @@ public class User {
         return updatedAt;
     }
 
+    // Deletion Request
+    public LocalDateTime getDeletionRequestedAt() {
+        return deletionRequestedAt;
+    }
+
+    public void setDeletionRequestedAt(
+        LocalDateTime deletionRequestedAt
+    ) {
+        this.deletionRequestedAt = deletionRequestedAt;
+    }
+
+    // Roles
     public Set<Role> getRoles() {
         return roles;
     }

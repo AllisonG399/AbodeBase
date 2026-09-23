@@ -3,11 +3,13 @@ package com.abodebase.api.auth.controller;
 import com.abodebase.api.auth.dto.CurrentUserResponse;
 import com.abodebase.api.auth.dto.LoginRequest;
 import com.abodebase.api.auth.dto.RegisterRequest;
+import com.abodebase.api.auth.entity.User;
+import com.abodebase.api.auth.exception.LoginRateLimitException;
+import com.abodebase.api.auth.exception.RegistrationRateLimitException;
+import com.abodebase.api.auth.repository.UserRepository;
 import com.abodebase.api.auth.service.RegistrationService;
 import com.abodebase.api.auth.service.LoginAttemptService;
 import com.abodebase.api.auth.service.RegistrationRateLimitService;
-import com.abodebase.api.auth.exception.LoginRateLimitException;
-import com.abodebase.api.auth.exception.RegistrationRateLimitException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -39,6 +41,7 @@ public class AuthController {
     private final RegistrationService registrationService;
     private final LoginAttemptService loginAttemptService;
     private final RegistrationRateLimitService registrationRateLimitService;
+    private final UserRepository userRepository;
 
     // ============================================
     // Constructor
@@ -49,13 +52,15 @@ public class AuthController {
             SecurityContextRepository securityContextRepository,
             RegistrationService registrationService,
             LoginAttemptService loginAttemptService,
-            RegistrationRateLimitService registrationRateLimitService
+            RegistrationRateLimitService registrationRateLimitService,
+            UserRepository userRepository
     ) {
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
         this.registrationService = registrationService;
         this.loginAttemptService = loginAttemptService;
         this.registrationRateLimitService = registrationRateLimitService;
+        this.userRepository = userRepository;
     }
 
 
@@ -162,10 +167,18 @@ public class AuthController {
             .map(authority -> authority.getAuthority())
             .collect(Collectors.toSet());
 
+        User user = userRepository
+            .findByEmailIgnoreCase(authentication.getName())
+            .orElseThrow(() ->
+                new IllegalArgumentException("User not found.")
+            );
+
         CurrentUserResponse response =
             new CurrentUserResponse(
-                authentication.getName(),
-                roles
+                user.getUsername(),
+                user.getEmail(),
+                roles,
+                user.getDeletionRequestedAt()
             );
 
         return ResponseEntity.ok(response);
