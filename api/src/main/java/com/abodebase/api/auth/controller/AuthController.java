@@ -25,6 +25,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.web.context.SecurityContextRepository;
 
 import org.springframework.web.bind.annotation.*;
@@ -42,6 +43,7 @@ public class AuthController {
     private final LoginAttemptService loginAttemptService;
     private final RegistrationRateLimitService registrationRateLimitService;
     private final UserRepository userRepository;
+    private final SessionRegistry sessionRegistry;
 
     // ============================================
     // Constructor
@@ -53,7 +55,8 @@ public class AuthController {
             RegistrationService registrationService,
             LoginAttemptService loginAttemptService,
             RegistrationRateLimitService registrationRateLimitService,
-            UserRepository userRepository
+            UserRepository userRepository,
+            SessionRegistry sessionRegistry
     ) {
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
@@ -61,6 +64,7 @@ public class AuthController {
         this.loginAttemptService = loginAttemptService;
         this.registrationRateLimitService = registrationRateLimitService;
         this.userRepository = userRepository;
+        this.sessionRegistry = sessionRegistry;
     }
 
 
@@ -139,6 +143,11 @@ public class AuthController {
                 securityContext,
                 httpRequest,
                 httpResponse
+            );
+
+            sessionRegistry.registerNewSession(
+                httpRequest.getSession().getId(),
+                authentication.getPrincipal()
             );
 
             return ResponseEntity.ok().build();

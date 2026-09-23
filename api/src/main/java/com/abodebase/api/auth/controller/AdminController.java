@@ -4,6 +4,7 @@ import com.abodebase.api.auth.dto.AdminUserResponse;
 import com.abodebase.api.auth.dto.UpdateUserStatusRequest;
 import com.abodebase.api.auth.entity.User;
 import com.abodebase.api.auth.service.UserService;
+import com.abodebase.api.auth.service.UserSessionService;
 
 import jakarta.validation.Valid;
 
@@ -19,9 +20,14 @@ import java.util.UUID;
 public class AdminController {
 
     private final UserService userService;
+    private final UserSessionService userSessionService;
 
-    public AdminController(UserService userService) {
+    public AdminController(
+        UserService userService,
+        UserSessionService userSessionService
+    ) {
         this.userService = userService;
+        this.userSessionService = userSessionService;
     }
 
     @GetMapping("/users")
@@ -58,6 +64,12 @@ public class AdminController {
             id,
             request.getEnabled()
         );
+
+        if (!request.getEnabled()) {
+            userSessionService.expireUserSessions(
+                user.getEmail()
+            );
+        }
 
         return ResponseEntity.ok(
             toResponse(user)

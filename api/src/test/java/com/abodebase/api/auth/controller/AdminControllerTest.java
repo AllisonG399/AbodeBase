@@ -32,6 +32,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
  * Regular User Cannot Change Status
  * Missing Enabled Value
  * Nonexistent User
+ * Disabled User Cannot Use Existing Session
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -729,5 +730,159 @@ class AdminControllerTest {
         .andExpect(status().isBadRequest());
     }
 
+    // ============================================
+    // Disabled User Cannot Use Existing Session
+    // ============================================
 
+    @Test
+    void disabledUserCannotUseExistingSession() throws Exception {
+
+        String uniqueId =
+            String.valueOf(System.currentTimeMillis());
+
+        String username =
+            "sessiontest" + uniqueId;
+
+        String email =
+            "sessiontest" + uniqueId + "@example.com";
+
+        String password =
+            "TestPassword123!";
+
+        // Register regular user
+        String registerBody = """
+            {
+                "username": "%s",
+                "email": "%s",
+                "password": "%s"
+            }
+            """.formatted(
+            username,
+            email,
+            password
+        );
+
+        mockMvc.perform(
+            post("/api/auth/register")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(registerBody)
+        )
+        .andExpect(status().isCreated());
+
+
+        // Login regular user
+        String loginBody = """
+            {
+                "identifier": "%s",
+                "password": "%s"
+            }
+            """.formatted(
+            email,
+            password
+        );
+
+        MockHttpSession userSession =
+            (MockHttpSession) mockMvc.perform(
+                post("/api/auth/login")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(loginBody)
+            )
+            .andExpect(status().isOk())
+            .andReturn()
+            .getRequest()
+            .getSession();
+
+
+        // Verify user currently has access
+        mockMvc.perform(
+            get("/api/auth/me")
+                .session(userSession)
+        )
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.email").value(email));
+
+
+        // Login admin
+        String adminEmail =
+            System.getenv("ABODEBASE_ADMIN_EMAIL");
+
+        String adminPassword =
+            System.getenv("ABODEBASE_ADMIN_PASSWORD");
+
+        String adminLoginBody = """
+            {
+                "identifier": "%s",
+                "password": "%s"
+            }
+            """.formatted(
+            adminEmail,
+            adminPassword
+        );
+
+        MockHttpSession adminSession =
+            (MockHttpSession) mockMvc.perform(
+                post("/api/auth/login")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(adminLoginBody)
+            )
+            .andExpect(status().isOk())
+            .andReturn()
+            .getRequest()
+            .getSession();
+
+
+        // Get regular user's ID
+        String response =
+            mockMvc.perform(
+                get("/api/admin/users")
+                    .session(adminSession)
+            )
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+        ObjectMapper objectMapper =
+            new ObjectMapper();
+
+        JsonNode users =
+            objectMapper.readTree(response);
+
+        String userId = null;
+
+        for (JsonNode user : users) {
+
+            if (email.equals(user.get("email").asText())) {
+                userId = user.get("id").asText();
+                break;
+            }
+        }
+
+
+        // Admin disables the user
+        mockMvc.perform(
+            patch("/api/admin/users/" + userId + "/status")
+                .session(adminSession)
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                        "enabled": false
+                    }
+                    """)
+        )
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.enabled").value(false));
+
+
+        // Existing user session should now be rejected
+        mockMvc.perform(
+            get("/api/auth/me")
+                .session(userSession)
+        )
+        .andExpect(status().isUnauthorized());
+    }
 }
